@@ -1,6 +1,7 @@
-
 const users = require('../models/user.model');
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+require('dotenv').config()
 
 
 const registerUser = async (req, res) => {
@@ -35,6 +36,49 @@ const registerUser = async (req, res) => {
     }
 };
 
+
+const loginUser = async ( req , res ,) => {
+
+    try {
+        const  { email , password } = req.body;
+
+        const user  = await users.findOne({
+            where : {email}
+        })
+
+        if(!user){
+            return res.status(400).json({
+                erro : "user does not exist",
+                message : "you need register before login"
+            })
+        }
+
+        const isValuePassword = await bcrypt.compare(password , user.password);
+
+        if(!isValuePassword){
+            return res.status(400).json({
+                erro : "password does not exist",
+                message : "you need register before login"
+            })
+        }
+
+        const copyUser = {...user.dataValues}
+        delete copyUser.password
+
+        const token = jwt.sign(copyUser,process.env.SECRET_JWT,{
+            algorithm :"HS512",
+            expiresIn : "2h"
+        })
+
+        copyUser.token =token
+
+
+        res.status(200).json(copyUser)
+
+    } catch (error) {
+        res.status(400).json(error);
+    }
+}
 
 const getAllUser = async (req, res) => {
 
@@ -85,5 +129,6 @@ module.exports = {
     registerUser,
     getAllUser,
     deletUser,
-    updateUser
+    updateUser,
+    loginUser
 }
